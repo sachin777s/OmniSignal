@@ -1,7 +1,32 @@
-import { WorkspacePerformanceChart } from "@/components/Charts/WorkspacePerformanceChart";
-import React from "react";
+"use client";
 
-export default function page() {
+import { WorkspacePerformanceChart } from "@/components/Charts/WorkspacePerformanceChart";
+import type { WorkspacePerformanceData } from "@/lib/dashboard-data";
+import { useEffect, useState } from "react";
+
+export default function Page() {
+  const [performanceData, setPerformanceData] =
+    useState<WorkspacePerformanceData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPerformanceData() {
+      const response = await fetch("/api/overview/performance");
+      const data = (await response.json()) as WorkspacePerformanceData;
+
+      if (isMounted) {
+        setPerformanceData(data);
+      }
+    }
+
+    loadPerformanceData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className="border-t border-slate-200 px-5 pb-5 pt-5 dark:border-slate-800">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -21,7 +46,11 @@ export default function page() {
       </div>
 
       <div className="relative h-[340px] min-h-[340px]">
-        <WorkspacePerformanceChart />
+        {performanceData ? (
+          <WorkspacePerformanceChart data={performanceData} />
+        ) : (
+          <div className="h-full animate-pulse rounded-lg bg-slate-100 dark:bg-slate-900" />
+        )}
         <p className="absolute bottom-0 left-1/2 -translate-x-1/2 text-xs font-black uppercase text-slate-950 dark:text-white">
           Last 30 Days
         </p>

@@ -9,52 +9,17 @@ import {
 } from "chart.js";
 import { useEffect, useRef } from "react";
 
+import type { WorkspacePerformanceData } from "@/lib/dashboard-data";
+
 Chart.register(...registerables);
-
-const chartLabels = Array.from({ length: 30 }, (_, index) => `MAY ${index + 1}`);
-
-const totalEvents = [
-  8.2, 10.8, 12.4, 15.1, 12.8, 10.6, 11.2, 12.9, 12.1, 12.5, 11.7, 10.3, 9.8,
-  13.7, 20.1, 20.9, 10.4, 13.1, 19.8, 22.6, 18.6, 15.4, 12.5, 11.7, 14.6,
-  13.5, 16.1, 21.0, 13.8, 10.6,
-];
-
-const activeVisitors = [
-  5.9, 7.8, 9.1, 8.4, 9.6, 8.2, 8.7, 8.1, 7.1, 8.2, 8.5, 7.7, 7.6, 11.8,
-  15.3, 14.2, 8.1, 8.4, 10.2, 14.8, 12.0, 11.2, 8.7, 8.4, 9.2, 10.6, 13.4,
-  12.0, 9.6, 8.8,
-];
-
-const capturedEvents = [
-  1.9, 2.2, 2.1, 2.8, 2.7, 1.9, 2.4, 2.5, 2.4, 2.3, 2.6, 2.5, 2.7, 3.5,
-  4.8, 4.4, 2.6, 2.9, 3.7, 4.9, 3.0, 2.8, 2.4, 2.6, 2.9, 2.8, 3.2, 3.5,
-  2.9, 1.8,
-];
-
-const filteredEvents = [
-  1.1, 1.4, 1.2, 1.7, 1.4, 1.2, 1.3, 1.4, 1.3, 1.2, 1.6, 1.5, 1.6, 1.9,
-  2.3, 1.9, 1.2, 1.6, 1.7, 2.0, 2.3, 2.0, 1.6, 1.7, 2.0, 1.8, 1.9, 1.9,
-  1.7, 1.2,
-];
-
-const miniSeries = {
-  area: [
-    7, 10, 12, 10, 11, 10, 11, 10, 13, 9, 12, 17, 10, 18, 21, 14, 11, 13,
-    18, 9,
-  ],
-  conversion: [
-    2.1, 1.5, 1.8, 2.0, 1.9, 3.4, 2.8, 2.5, 2.4, 1.7, 2.3, 2.7,
-  ],
-  duration: [62, 70, 58, 67, 47, 55, 56, 50, 54, 46],
-  stackedBottom: [34, 29, 23, 24, 28, 23, 20, 16],
-  stackedMiddle: [23, 28, 21, 21, 26, 22, 18, 15],
-};
 
 type ChartVariant = "main" | "area" | "conversion" | "duration" | "stacked";
 
 export function WorkspacePerformanceChart({
+  data,
   variant = "main",
 }: {
+  data: WorkspacePerformanceData;
   variant?: ChartVariant;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,27 +29,30 @@ export function WorkspacePerformanceChart({
       return;
     }
 
-    const chart = new Chart(canvasRef.current, getChartConfig(variant));
+    const chart = new Chart(canvasRef.current, getChartConfig(variant, data));
 
     return () => {
       chart.destroy();
     };
-  }, [variant]);
+  }, [data, variant]);
 
   return <canvas ref={canvasRef} />;
 }
 
-function getChartConfig(variant: ChartVariant): ChartConfiguration {
+function getChartConfig(
+  variant: ChartVariant,
+  data: WorkspacePerformanceData,
+): ChartConfiguration {
   if (variant === "main") {
     return {
       type: "bar",
       data: {
-        labels: chartLabels,
+        labels: data.labels,
         datasets: [
-          barDataset("Captured Events", capturedEvents, "#168965", "events"),
-          barDataset("Filtered Events", filteredEvents, "#cbd5e1", "events"),
-          lineDataset("Total Events (24hr Avg)", totalEvents, "#168965"),
-          lineDataset("Active Visitors", activeVisitors, "#86c7a4"),
+          barDataset("Captured Events", data.capturedEvents, "#168965", "events"),
+          barDataset("Filtered Events", data.filteredEvents, "#cbd5e1", "events"),
+          lineDataset("Total Events (24hr Avg)", data.totalEvents, "#168965"),
+          lineDataset("Active Visitors", data.activeVisitors, "#86c7a4"),
         ],
       },
       options: mainChartOptions,
@@ -95,10 +63,10 @@ function getChartConfig(variant: ChartVariant): ChartConfiguration {
     return {
       type: "bar",
       data: {
-        labels: miniSeries.duration.map((_, index) => `${index + 1}`),
+        labels: data.miniSeries.duration.map((_, index) => `${index + 1}`),
         datasets: [
           {
-            data: miniSeries.duration,
+            data: data.miniSeries.duration,
             backgroundColor: "#94a3b8",
             borderRadius: 3,
             barPercentage: 0.7,
@@ -114,22 +82,22 @@ function getChartConfig(variant: ChartVariant): ChartConfiguration {
     return {
       type: "bar",
       data: {
-        labels: miniSeries.stackedBottom.map((_, index) => `${index + 1}`),
+        labels: data.miniSeries.stackedBottom.map((_, index) => `${index + 1}`),
         datasets: [
           {
-            data: miniSeries.stackedBottom,
+            data: data.miniSeries.stackedBottom,
             backgroundColor: "#168965",
             borderRadius: 2,
             stack: "pageViews",
           },
           {
-            data: miniSeries.stackedMiddle,
+            data: data.miniSeries.stackedMiddle,
             backgroundColor: "#6ee7b7",
             borderRadius: 2,
             stack: "pageViews",
           },
           {
-            data: [18, 14, 13, 11, 10, 9, 8, 7],
+            data: data.miniSeries.stackedTop,
             backgroundColor: "#cbd5e1",
             borderRadius: 2,
             stack: "pageViews",
@@ -146,15 +114,16 @@ function getChartConfig(variant: ChartVariant): ChartConfiguration {
     };
   }
 
-  const data = variant === "conversion" ? miniSeries.conversion : miniSeries.area;
+  const series =
+    variant === "conversion" ? data.miniSeries.conversion : data.miniSeries.area;
 
   return {
     type: "line",
     data: {
-      labels: data.map((_, index) => `${index + 1}`),
+      labels: series.map((_, index) => `${index + 1}`),
       datasets: [
         {
-          data,
+          data: series,
           backgroundColor: "rgba(16, 185, 129, 0.2)",
           borderColor: "#168965",
           borderWidth: 2,

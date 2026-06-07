@@ -9,36 +9,46 @@ import {
 } from "chart.js";
 import { useEffect, useRef } from "react";
 
+import type { EngagementData } from "@/lib/dashboard-data";
+
 Chart.register(...registerables);
-
-const dayLabels = Array.from({ length: 14 }, (_, index) => `May ${index + 17}`);
-
-const quality = [62, 66, 64, 71, 75, 73, 78, 82, 79, 84, 87, 86, 90, 92];
-const intent = [34, 37, 36, 42, 45, 44, 49, 53, 51, 57, 60, 62, 65, 68];
-const friction = [28, 25, 24, 21, 19, 18, 17, 15, 16, 14, 12, 11, 10, 9];
-
-const featureLabels = ["Dashboards", "Funnels", "Inbox", "Signals", "Bot Guard", "Exports"];
-const featureEvents = [18.6, 14.2, 11.8, 9.6, 7.2, 4.9];
-const featureAccounts = [82, 68, 57, 51, 44, 28];
-
-const journeyLabels = ["Landing", "Pricing", "Docs", "Signup", "Invite", "Activation"];
-const journeyValues = [92, 76, 64, 48, 39, 31];
 
 type EngagementChartKind = "quality" | "features" | "journey";
 
-export function EngagementQualityChart() {
-  return <EngagementChart kind="quality" />;
+export function EngagementQualityChart({
+  data,
+}: {
+  data: EngagementData["qualityChart"];
+}) {
+  return <EngagementChart kind="quality" data={data} />;
 }
 
-export function FeatureAdoptionChart() {
-  return <EngagementChart kind="features" />;
+export function FeatureAdoptionChart({
+  data,
+}: {
+  data: EngagementData["featureAdoptionChart"];
+}) {
+  return <EngagementChart kind="features" data={data} />;
 }
 
-export function JourneyDepthChart() {
-  return <EngagementChart kind="journey" />;
+export function JourneyDepthChart({
+  data,
+}: {
+  data: EngagementData["journeyDepthChart"];
+}) {
+  return <EngagementChart kind="journey" data={data} />;
 }
 
-function EngagementChart({ kind }: { kind: EngagementChartKind }) {
+function EngagementChart({
+  data,
+  kind,
+}: {
+  data:
+    | EngagementData["qualityChart"]
+    | EngagementData["featureAdoptionChart"]
+    | EngagementData["journeyDepthChart"];
+  kind: EngagementChartKind;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -46,25 +56,33 @@ function EngagementChart({ kind }: { kind: EngagementChartKind }) {
       return;
     }
 
-    const chart = new Chart(canvasRef.current, getChartConfig(kind));
+    const chart = new Chart(canvasRef.current, getChartConfig(kind, data));
 
     return () => {
       chart.destroy();
     };
-  }, [kind]);
+  }, [data, kind]);
 
   return <canvas ref={canvasRef} />;
 }
 
-function getChartConfig(kind: EngagementChartKind): ChartConfiguration {
+function getChartConfig(
+  kind: EngagementChartKind,
+  data:
+    | EngagementData["qualityChart"]
+    | EngagementData["featureAdoptionChart"]
+    | EngagementData["journeyDepthChart"],
+): ChartConfiguration {
   if (kind === "features") {
+    const chartData = data as EngagementData["featureAdoptionChart"];
+
     return {
       type: "bar",
       data: {
-        labels: featureLabels,
+        labels: chartData.labels,
         datasets: [
-          barDataset("Feature Events", featureEvents, "#047857", "events"),
-          barDataset("Accounts Reached", featureAccounts, "#99f6c8", "accounts"),
+          barDataset("Feature Events", chartData.events, "#047857", "events"),
+          barDataset("Accounts Reached", chartData.accounts, "#99f6c8", "accounts"),
         ],
       },
       options: featureOptions,
@@ -72,14 +90,16 @@ function getChartConfig(kind: EngagementChartKind): ChartConfiguration {
   }
 
   if (kind === "journey") {
+    const chartData = data as EngagementData["journeyDepthChart"];
+
     return {
       type: "bar",
       data: {
-        labels: journeyLabels,
+        labels: chartData.labels,
         datasets: [
           {
             label: "Users",
-            data: journeyValues,
+            data: chartData.values,
             backgroundColor: [
               "#064e45",
               "#047857",
@@ -98,14 +118,16 @@ function getChartConfig(kind: EngagementChartKind): ChartConfiguration {
     };
   }
 
+  const chartData = data as EngagementData["qualityChart"];
+
   return {
     type: "line",
     data: {
-      labels: dayLabels,
+      labels: chartData.labels,
       datasets: [
-        lineDataset("Engagement Quality", quality, "#047857", "rgba(4, 120, 87, 0.16)"),
-        lineDataset("Buying Intent", intent, "#66c99b", "rgba(102, 201, 155, 0.18)"),
-        lineDataset("Friction Signals", friction, "#94a3b8", "rgba(148, 163, 184, 0.12)"),
+        lineDataset("Engagement Quality", chartData.quality, "#047857", "rgba(4, 120, 87, 0.16)"),
+        lineDataset("Buying Intent", chartData.intent, "#66c99b", "rgba(102, 201, 155, 0.18)"),
+        lineDataset("Friction Signals", chartData.friction, "#94a3b8", "rgba(148, 163, 184, 0.12)"),
       ],
     },
     options: qualityOptions,
